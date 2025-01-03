@@ -1,18 +1,14 @@
 from google.cloud import aiplatform
 import os
-import absl.logging
 
 # Set up Google Cloud authentication
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
 
-# Suppress unnecessary logging
-absl.logging.set_verbosity(absl.logging.ERROR)
-
 # Initialize the AI Platform Prediction Service Client
 client = aiplatform.gapic.PredictionServiceClient()
 
-# Define the model name (no need for endpoint ID)
-model_name = "projects/brave-operand-427006/locations/us-central1/models/gemini-1_5-turbo"
+# Define the endpoint
+endpoint_name = "projects/YOUR_PROJECT_ID/locations/YOUR_LOCATION/endpoints/YOUR_ENDPOINT_ID"
 
 def get_image_description(image_path):
     """
@@ -30,8 +26,8 @@ def get_image_description(image_path):
     instance = {"image": {"bytes": image_content}}
     instances = [instance]
 
-    # Make the prediction using the model name
-    response = client.predict(model=model_name, instances=instances)
+    # Make the prediction using the endpoint name
+    response = client.predict(endpoint=endpoint_name, instances=instances)
 
     # Parse and return the first prediction result
     predictions = response.predictions
