@@ -1,57 +1,30 @@
-from google.cloud import aiplatform
+from google.cloud import vision
 import os
 
 # Set up Google Cloud authentication
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
 
-# Initialize the AI Platform Prediction Service Client
-client = aiplatform.gapic.PredictionServiceClient()
-
-# Define the endpoint
-endpoint_name = "projects/YOUR_PROJECT_ID/locations/YOUR_LOCATION/endpoints/YOUR_ENDPOINT_ID"
+# Initialize Vision API client
+client = vision.ImageAnnotatorClient()
 
 def get_image_description(image_path):
-    """
-    Sends an image to the AI platform for description generation.
-    """
-    # Ensure the image file exists
-    if not os.path.exists(image_path):
-        raise FileNotFoundError(f"Image file '{image_path}' not found.")
-
-    # Read the image as binary data
     with open(image_path, "rb") as image_file:
-        image_content = image_file.read()
+        content = image_file.read()
 
-    # Prepare the instance for prediction
-    instance = {"image": {"bytes": image_content}}
-    instances = [instance]
+    image = vision.Image(content=content)
+    response = client.label_detection(image=image)
 
-    # Make the prediction using the endpoint name
-    response = client.predict(endpoint=endpoint_name, instances=instances)
+    if response.error.message:
+        raise Exception(f"Vision API error: {response.error.message}")
 
-    # Parse and return the first prediction result
-    predictions = response.predictions
-    return predictions[0].get("description", "No description found")
+    # Generate a brief description using the top labels
+    labels = [label.description for label in response.label_annotations[:5]]
+    return "This image contains: " + ", ".join(labels)
 
-def extract_keywords(description):
-    """
-    Extracts keywords from the image description.
-    """
-    return [word.strip() for word in description.split() if len(word) > 3]
-
-# Example usage
 if __name__ == "__main__":
+    image_path = "example.jpg"
     try:
-        # Path to the input image
-        image_path = "example.jpg"
-
-        # Generate the image description
         description = get_image_description(image_path)
         print("Image Description:", description)
-
-        # Extract keywords
-        keywords = extract_keywords(description)
-        print("Keywords:", keywords)
-
     except Exception as e:
         print("Error:", e)
